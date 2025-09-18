@@ -7,7 +7,7 @@ import Pricing from './pages/Pricing';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import Dashboard from './pages/Dashboard';
-import Enterprise from './pages/Enterprise';
+import Enterprise from './pages/enterprise';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 
