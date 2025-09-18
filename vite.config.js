@@ -1,22 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: ['localhost', '127.0.0.1']
+    host: true,
+    port: 5173
   },
   resolve: {
     alias: {
-      '@': path.resolve(process.cwd(), './src')
-    },
-    extensions: ['.js', '.jsx', '.ts', '.tsx', '.json']
+      '@': path.resolve(__dirname, './src')
+    }
   },
   optimizeDeps: {
     esbuildOptions: {
-      target: 'es2020',
-      loader: { '.js': 'jsx' }
+      loader: {
+        '.js': 'jsx'
+      }
     }
   }
 })

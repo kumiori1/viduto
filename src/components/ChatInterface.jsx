@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Upload, X, Download, ExternalLink, RotateCcw, Loader2 } from 'lucide-react';
+import { Send, Upload, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Chat, Message, Video } from '@/api/entities';
-import { UploadFile } from '@/api/integrations';
-import { triggerInitialVideoWorkflow, triggerRevisionWorkflow, checkVideoStatus } from '@/api/functions';
+import { supabase, db, uploadFile, auth } from '@/lib/supabase';
 import { VideoPlayer } from './VideoPlayer';
 import ProductionProgress from './ProductionProgress';
 import { WinCreditsModal } from './WinCreditsModal';
@@ -21,6 +19,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
     const [showWinCreditsModal, setShowWinCreditsModal] = useState(false);
     const [showCreditsModal, setShowCreditsModal] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [user, setUser] = useState(null);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const textareaRef = useRef(null);
@@ -33,8 +32,21 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
         scrollToBottom();
     }, [messages]);
 
+    // Get current user
+    useEffect(() => {
+        const getCurrentUser = async () => {
+            try {
+                const currentUser = await auth.getCurrentUser();
+                setUser(currentUser);
+            } catch (error) {
+                console.error('Error getting user:', error);
+            }
+        };
+        getCurrentUser();
+    }, []);
+
     const loadChatData = useCallback(async () => {
-        if (!chatId) {
+        if (!chatId || !user) {
             setMessages([]);
             setChat(null);
             setVideos([]);
@@ -43,11 +55,21 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
         }
 
         try {
-            const [chatData, chatMessages, chatVideos] = await Promise.all([
-                Chat.get(chatId),
-                Message.filter({ chat_id: chatId }, 'created_date'),
-                Video.filter({ chat_id: chatId }, '-created_date')
-            ]);
+            // Get chat data
+            const { data: chatData, error: chatError } = await supabase
+                .from('chats')
+                .select('*')
+                .eq('id', chatId)
+                .eq('user_id', user.id)
+                .single();
+
+            if (chatError) throw chatError;
+
+            // Get messages
+            const chatMessages = await db.getMessages(chatId);
+            
+            // Get videos
+            const chatVideos = await db.getVideos(chatId);
 
             setChat(chatData);
             setMessages(chatMessages || []);
@@ -60,7 +82,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
             if (activeVideo) {
                 setProductionStatus({
                     videoId: activeVideo.id,
-                    startedAt: new Date(activeVideo.created_date).getTime(),
+                    startedAt: new Date(activeVideo.created_at).getTime(),
                     chatId: chatId
                 });
             } else {
@@ -71,7 +93,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
             console.error('Error loading chat data:', error);
             toast.error('Failed to load chat data');
         }
-    }, [chatId]);
+    }, [chatId, user]);
 
     useEffect(() => {
         loadChatData();
@@ -92,6 +114,10 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
         e.preventDefault();
         
         if (!newMessage.trim() && !selectedFile) return;
+        if (!user) {
+            toast.error('Please log in to send messages');
+            return;
+        }
 
         setIsLoading(true);
         
@@ -99,9 +125,10 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
             let currentChat = chat;
             
             if (!currentChat) {
-                currentChat = await Chat.create({
+                currentChat = await db.createChat({
                     title: newMessage.trim() || 'New Video Project',
-                    workflow_state: 'draft'
+                    user_id: user.id,
+                    status: 'active'
                 });
                 setChat(currentChat);
                 onChatUpdate(currentChat.id);
@@ -109,7 +136,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
 
             let fileUrl = null;
             if (selectedFile) {
-                const uploadResult = await UploadFile({ file: selectedFile });
+                const uploadResult = await uploadFile(selectedFile);
                 fileUrl = uploadResult.file_url;
             }
 
@@ -120,7 +147,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
                 metadata: fileUrl ? { image_url: fileUrl } : {}
             };
 
-            const userMessage = await Message.create(messageData);
+            const userMessage = await db.createMessage(messageData);
             
             setMessages(prev => [...prev, userMessage]);
             setNewMessage('');
@@ -129,21 +156,41 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
                 fileInputRef.current.value = '';
             }
 
-            // Check if this is an initial request or revision
+            // Simulate video generation (replace with actual API call)
             const isInitialRequest = messages.length === 0 || !videos.some(v => v.status === 'completed');
             
-            if (isInitialRequest) {
-                await triggerInitialVideoWorkflow({ chatId: currentChat.id });
-            } else {
-                await triggerRevisionWorkflow({ chatId: currentChat.id });
-            }
+            // Create video record
+            const videoData = {
+                chat_id: currentChat.id,
+                user_id: user.id,
+                status: 'processing',
+                video_type: isInitialRequest ? 'initial' : 'revision'
+            };
+
+            const newVideo = await db.createVideo(videoData);
 
             // Start production tracking
             setProductionStatus({
-                videoId: isInitialRequest ? `initial_${currentChat.id}` : `revision_${currentChat.id}`,
+                videoId: newVideo.id,
                 startedAt: Date.now(),
                 chatId: currentChat.id
             });
+
+            // Simulate video processing (replace with actual workflow)
+            setTimeout(async () => {
+                try {
+                    await db.updateVideo(newVideo.id, {
+                        status: 'completed',
+                        video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+                    });
+                    
+                    setProductionStatus(null);
+                    await loadChatData();
+                    toast.success('Video completed!');
+                } catch (error) {
+                    console.error('Error updating video:', error);
+                }
+            }, 10000);
 
             // Refresh credits
             onCreditsRefreshed();
@@ -161,8 +208,9 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
         
         setIsCancelling(true);
         try {
-            // Here you would call your cancel API
-            // await cancelVideoProduction({ videoId: productionStatus.videoId });
+            await db.updateVideo(productionStatus.videoId, {
+                status: 'cancelled'
+            });
             
             setProductionStatus(null);
             toast.success('Video production cancelled');
