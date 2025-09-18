@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Menu, X, User as UserIcon, CreditCard, LogOut, Plus, MessageSquare, HelpCircle, Sun, Moon, Gift, Zap, Settings } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { db, uploadFile } from '@/lib/supabase';
 import { ChatInterface } from '../components/ChatInterface';
 import { Button } from '@/components/ui/button';

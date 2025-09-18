@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { db } from "@/lib/supabase";
 import { Footer } from "../components/Footer";
 import { AuthModal } from "../components/AuthModal";

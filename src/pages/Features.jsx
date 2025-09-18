@@ -3,7 +3,7 @@ import { Camera, Clock, MessageSquare, Wand2, TrendingUp, DollarSign, FileText, 
 import { Link, useNavigate } from 'react-router-dom';
 import { Footer } from '../components/Footer';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { AuthModal } from '../components/AuthModal';
 import { MobileMenu } from '../components/MobileMenu';
 import Logo from "@/components/Logo";

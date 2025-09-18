@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Upload, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase, db, uploadFile } from '@/lib/supabase';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { VideoPlayer } from './VideoPlayer';
 import ProductionProgress from './ProductionProgress';
 import { WinCreditsModal } from './WinCreditsModal';

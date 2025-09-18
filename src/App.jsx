@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { AuthProvider } from '@/hooks/useAuth';
+import { AuthProvider } from '@/components/auth/AuthProvider';
 import Home from './pages/Home';
 import Features from './pages/Features';
 import Pricing from './pages/Pricing';

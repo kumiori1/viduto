@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Clock, Building, Check, X, Camera, Wand2, Edit, Upload, Play } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { db, uploadFile } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { AuthModal } from '../components/AuthModal';

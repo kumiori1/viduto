@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PricingContent } from '../components/PricingContent';
 import { Footer } from '../components/Footer';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { AuthModal } from '../components/AuthModal';
 import { MobileMenu } from '../components/MobileMenu';
 import Logo from '@/components/Logo';
