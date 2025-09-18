@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Upload, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase, db, uploadFile, auth } from '@/lib/supabase';
+import { supabase, db, uploadFile } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 import { VideoPlayer } from './VideoPlayer';
 import ProductionProgress from './ProductionProgress';
 import { WinCreditsModal } from './WinCreditsModal';
@@ -9,6 +10,7 @@ import { CreditsModal } from './CreditsModal';
 import { toast } from "sonner";
 
 export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewChat, darkMode = false }) {
+    const { user } = useAuth();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
@@ -19,7 +21,6 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
     const [showWinCreditsModal, setShowWinCreditsModal] = useState(false);
     const [showCreditsModal, setShowCreditsModal] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
-    const [user, setUser] = useState(null);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const textareaRef = useRef(null);
@@ -31,19 +32,6 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
-
-    // Get current user
-    useEffect(() => {
-        const getCurrentUser = async () => {
-            try {
-                const currentUser = await auth.getCurrentUser();
-                setUser(currentUser);
-            } catch (error) {
-                console.error('Error getting user:', error);
-            }
-        };
-        getCurrentUser();
-    }, []);
 
     const loadChatData = useCallback(async () => {
         if (!chatId || !user) {
@@ -57,7 +45,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
         try {
             // Get chat data
             const { data: chatData, error: chatError } = await supabase
-                .from('chats')
+                .from('chat')
                 .select('*')
                 .eq('id', chatId)
                 .eq('user_id', user.id)
@@ -162,9 +150,10 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
             // Create video record
             const videoData = {
                 chat_id: currentChat.id,
-                user_id: user.id,
+                prompt: newMessage.trim(),
+                image_url: fileUrl,
                 status: 'processing',
-                video_type: isInitialRequest ? 'initial' : 'revision'
+                credits_used: 10
             };
 
             const newVideo = await db.createVideo(videoData);

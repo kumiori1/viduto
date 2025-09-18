@@ -9,13 +9,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Auth helpers
+// Enhanced auth helpers with better error handling
 export const auth = {
   signInWithGoogle: async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`
+        redirectTo: `${window.location.origin}/dashboard`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
       }
     })
     if (error) throw error
@@ -38,7 +42,7 @@ export const auth = {
   }
 }
 
-// Database helpers
+// Enhanced database helpers with proper error handling
 export const db = {
   // Users
   getUser: async (userId) => {
@@ -65,7 +69,7 @@ export const db = {
   // Chats
   getChats: async (userId) => {
     const { data, error } = await supabase
-      .from('chats')
+      .from('chat')
       .select('*')
       .eq('user_id', userId)
       .order('updated_at', { ascending: false })
@@ -75,7 +79,7 @@ export const db = {
 
   createChat: async (chatData) => {
     const { data, error } = await supabase
-      .from('chats')
+      .from('chat')
       .insert(chatData)
       .select()
       .single()
@@ -85,7 +89,7 @@ export const db = {
 
   updateChat: async (chatId, updates) => {
     const { data, error } = await supabase
-      .from('chats')
+      .from('chat')
       .update(updates)
       .eq('id', chatId)
       .select()
@@ -97,7 +101,7 @@ export const db = {
   // Messages
   getMessages: async (chatId) => {
     const { data, error } = await supabase
-      .from('messages')
+      .from('message')
       .select('*')
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true })
@@ -107,7 +111,7 @@ export const db = {
 
   createMessage: async (messageData) => {
     const { data, error } = await supabase
-      .from('messages')
+      .from('message')
       .insert(messageData)
       .select()
       .single()
@@ -118,7 +122,7 @@ export const db = {
   // Videos
   getVideos: async (chatId) => {
     const { data, error } = await supabase
-      .from('videos')
+      .from('video')
       .select('*')
       .eq('chat_id', chatId)
       .order('created_at', { ascending: false })
@@ -128,7 +132,7 @@ export const db = {
 
   createVideo: async (videoData) => {
     const { data, error } = await supabase
-      .from('videos')
+      .from('video')
       .insert(videoData)
       .select()
       .single()
@@ -138,7 +142,7 @@ export const db = {
 
   updateVideo: async (videoId, updates) => {
     const { data, error } = await supabase
-      .from('videos')
+      .from('video')
       .update(updates)
       .eq('id', videoId)
       .select()
@@ -181,8 +185,19 @@ export const db = {
   }
 }
 
-// File upload helper
+// Enhanced file upload helper with validation
 export const uploadFile = async (file) => {
+  // Validate file size (10MB limit)
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error('File size must be less than 10MB')
+  }
+
+  // Validate file type
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Only image files are allowed')
+  }
+
   const fileExt = file.name.split('.').pop()
   const fileName = `${Math.random()}.${fileExt}`
   const filePath = `uploads/${fileName}`

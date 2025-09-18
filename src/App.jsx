@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { AuthProvider } from '@/hooks/useAuth';
 import Home from './pages/Home';
 import Features from './pages/Features';
 import Pricing from './pages/Pricing';
@@ -13,7 +14,7 @@ import Privacy from './pages/privacy';
 
 export default function App() {
   return (
-    <>
+    <AuthProvider>
       <Router>
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
@@ -29,6 +30,6 @@ export default function App() {
         </Routes>
       </Router>
       <Toaster />
-    </>
+    </AuthProvider>
   );
 }
