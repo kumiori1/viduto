@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Upload, X, Loader2 } from 'lucide-react';
+import { Send, Upload, X, Loader2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase, db, uploadFile } from '@/lib/supabase';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { VideoPlayer } from './VideoPlayer';
 import ProductionProgress from './ProductionProgress';
-import { WinCreditsModal } from './WinCreditsModal';
-import { CreditsModal } from './CreditsModal';
+import { initiateVideoGeneration, cancelVideoGeneration } from '@/lib/videoGeneration';
 import { toast } from "sonner";
 
 export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewChat, darkMode = false }) {
@@ -18,8 +17,6 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
     const [chat, setChat] = useState(null);
     const [videos, setVideos] = useState([]);
     const [productionStatus, setProductionStatus] = useState(null);
-    const [showWinCreditsModal, setShowWinCreditsModal] = useState(false);
-    const [showCreditsModal, setShowCreditsModal] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
@@ -63,6 +60,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
             setMessages(chatMessages || []);
             setVideos(chatVideos || []);
 
+            // Check for active video production
             const activeVideo = chatVideos?.find(v => 
                 v.status === 'processing' || v.status === 'queued'
             );
@@ -70,7 +68,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
             if (activeVideo) {
                 setProductionStatus({
                     videoId: activeVideo.id,
-                    startedAt: new Date(activeVideo.created_at).getTime(),
+                    startedAt: new Date(activeVideo.processing_started_at || activeVideo.created_at).getTime(),
                     chatId: chatId
                 });
             } else {
@@ -79,7 +77,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
 
         } catch (error) {
             console.error('Error loading chat data:', error);
-            toast.error('Failed to load chat data');
+            toast.error('שגיאה בטעינת נתוני הצ\'אט');
         }
     }, [chatId, user]);
 
@@ -87,11 +85,71 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
         loadChatData();
     }, [loadChatData]);
 
+    // Real-time subscriptions
+    useEffect(() => {
+        if (!chatId) return;
+
+        const messageChannel = supabase
+            .channel(`chat-${chatId}-messages`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'message',
+                filter: `chat_id=eq.${chatId}`
+            }, (payload) => {
+                setMessages(prev => {
+                    if (prev.some(msg => msg.id === payload.new.id)) {
+                        return prev;
+                    }
+                    return [...prev, payload.new];
+                });
+            })
+            .subscribe();
+
+        const videoChannel = supabase
+            .channel(`chat-${chatId}-videos`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'video',
+                filter: `chat_id=eq.${chatId}`
+            }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    setVideos(prev => {
+                        if (prev.some(video => video.id === payload.new.id)) {
+                            return prev;
+                        }
+                        return [payload.new, ...prev];
+                    });
+                } else if (payload.eventType === 'UPDATE') {
+                    setVideos(prev => prev.map(video => 
+                        video.id === payload.new.id ? payload.new : video
+                    ));
+                    
+                    // Update production status
+                    if (payload.new.status === 'completed' || payload.new.status === 'failed' || payload.new.status === 'cancelled') {
+                        setProductionStatus(null);
+                        if (payload.new.status === 'completed') {
+                            toast.success('הסרטון הושלם בהצלחה!');
+                        } else if (payload.new.status === 'failed') {
+                            toast.error('שגיאה ביצירת הסרטון');
+                        }
+                    }
+                }
+            })
+            .subscribe();
+
+        return () => {
+            messageChannel.unsubscribe();
+            videoChannel.unsubscribe();
+        };
+    }, [chatId]);
+
     const handleFileSelect = (e) => {
         const file = e.target.files?.[0];
         if (file) {
             if (file.size > 10 * 1024 * 1024) {
-                toast.error('File size must be less than 10MB');
+                toast.error('גודל הקובץ חייב להיות פחות מ-10MB');
                 return;
             }
             setSelectedFile(file);
@@ -103,7 +161,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
         
         if (!newMessage.trim() && !selectedFile) return;
         if (!user) {
-            toast.error('Please log in to send messages');
+            toast.error('אנא התחבר כדי לשלוח הודעות');
             return;
         }
 
@@ -112,9 +170,10 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
         try {
             let currentChat = chat;
             
+            // Create new chat if needed
             if (!currentChat) {
                 currentChat = await db.createChat({
-                    title: newMessage.trim() || 'New Video Project',
+                    title: newMessage.trim() || 'פרויקט סרטון חדש',
                     user_id: user.id,
                     status: 'active'
                 });
@@ -122,12 +181,14 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
                 onChatUpdate(currentChat.id);
             }
 
+            // Upload file if exists
             let fileUrl = null;
             if (selectedFile) {
                 const uploadResult = await uploadFile(selectedFile);
                 fileUrl = uploadResult.file_url;
             }
 
+            // Create user message
             const messageData = {
                 chat_id: currentChat.id,
                 message_type: 'user',
@@ -144,49 +205,34 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
                 fileInputRef.current.value = '';
             }
 
-            // Simulate video generation (replace with actual API call)
-            const isInitialRequest = messages.length === 0 || !videos.some(v => v.status === 'completed');
-            
-            // Create video record
-            const videoData = {
-                chat_id: currentChat.id,
-                prompt: newMessage.trim(),
-                image_url: fileUrl,
-                status: 'processing',
-                credits_used: 10
-            };
+            // Start video generation
+            try {
+                const newVideo = await initiateVideoGeneration(
+                    currentChat.id,
+                    newMessage.trim(),
+                    fileUrl,
+                    user.id
+                );
 
-            const newVideo = await db.createVideo(videoData);
+                setProductionStatus({
+                    videoId: newVideo.id,
+                    startedAt: Date.now(),
+                    chatId: currentChat.id
+                });
 
-            // Start production tracking
-            setProductionStatus({
-                videoId: newVideo.id,
-                startedAt: Date.now(),
-                chatId: currentChat.id
-            });
-
-            // Simulate video processing (replace with actual workflow)
-            setTimeout(async () => {
-                try {
-                    await db.updateVideo(newVideo.id, {
-                        status: 'completed',
-                        video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
-                    });
-                    
-                    setProductionStatus(null);
-                    await loadChatData();
-                    toast.success('Video completed!');
-                } catch (error) {
-                    console.error('Error updating video:', error);
+                // Refresh credits
+                if (onCreditsRefreshed) {
+                    onCreditsRefreshed();
                 }
-            }, 10000);
 
-            // Refresh credits
-            onCreditsRefreshed();
+            } catch (error) {
+                console.error('Error starting video generation:', error);
+                toast.error('שגיאה בהתחלת יצירת הסרטון');
+            }
 
         } catch (error) {
             console.error('Error sending message:', error);
-            toast.error('Failed to send message. Please try again.');
+            toast.error('שגיאה בשליחת ההודעה. נסה שוב.');
         } finally {
             setIsLoading(false);
         }
@@ -197,15 +243,12 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
         
         setIsCancelling(true);
         try {
-            await db.updateVideo(productionStatus.videoId, {
-                status: 'cancelled'
-            });
-            
+            await cancelVideoGeneration(productionStatus.videoId, user.id, 'בוטל על ידי המשתמש');
             setProductionStatus(null);
-            toast.success('Video production cancelled');
+            toast.success('יצירת הסרטון בוטלה');
         } catch (error) {
             console.error('Error cancelling production:', error);
-            toast.error('Failed to cancel production');
+            toast.error('שגיאה בביטול יצירת הסרטון');
         } finally {
             setIsCancelling(false);
         }
@@ -226,17 +269,20 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
         return (
             <div className={`h-full flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
                 <div className="text-center max-w-md mx-auto p-6">
+                    <div className="mb-6">
+                        <Play className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-300'}`} />
+                    </div>
                     <h2 className={`text-2xl font-light mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        Ready to create your first video?
+                        מוכן ליצור את הסרטון הראשון שלך?
                     </h2>
                     <p className={`font-light mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        Start a new project to begin creating professional videos with AI.
+                        התחל פרויקט חדש כדי להתחיל ליצור סרטונים מקצועיים עם AI.
                     </p>
                     <Button
                         onClick={onNewChat}
                         className="bg-orange-500 text-white px-6 py-3 rounded-full font-normal hover:bg-orange-500/90 transform hover:scale-105 transition-all duration-200 shadow-lg"
                     >
-                        Start New Project
+                        התחל פרויקט חדש
                     </Button>
                 </div>
             </div>
@@ -265,7 +311,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
                             {message.metadata?.image_url && (
                                 <img
                                     src={message.metadata.image_url}
-                                    alt="Uploaded content"
+                                    alt="תוכן שהועלה"
                                     className="mt-3 max-w-full h-auto rounded-lg"
                                 />
                             )}
@@ -315,7 +361,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onInput={adjustTextareaHeight}
-                                placeholder="Describe your video or request changes..."
+                                placeholder="תאר את הסרטון שלך או בקש שינויים..."
                                 className={`w-full resize-none border-none outline-none font-light ${
                                     darkMode ? 'bg-transparent text-white placeholder-gray-400' : 'bg-transparent text-gray-900 placeholder-gray-500'
                                 }`}
@@ -382,19 +428,6 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
                     </div>
                 </form>
             </div>
-
-            <WinCreditsModal 
-                isOpen={showWinCreditsModal}
-                onClose={() => setShowWinCreditsModal(false)}
-                darkMode={darkMode}
-            />
-
-            <CreditsModal
-                isOpen={showCreditsModal}
-                onClose={() => setShowCreditsModal(false)}
-                onPurchaseComplete={onCreditsRefreshed}
-                darkMode={darkMode}
-            />
         </div>
     );
 }

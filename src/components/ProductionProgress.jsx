@@ -19,8 +19,8 @@ export default function ProductionProgress({
       const elapsed = Math.floor((now - startedAt) / 1000);
       setTimeElapsed(elapsed);
       
-      // Simulate progress (0-100% over ~10 seconds)
-      const simulatedProgress = Math.min((elapsed / 10) * 100, 95);
+      // Simulate progress (0-100% over ~20 seconds)
+      const simulatedProgress = Math.min((elapsed / 20) * 100, 95);
       setProgress(simulatedProgress);
     }, 1000);
 
@@ -42,7 +42,7 @@ export default function ProductionProgress({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
-          <span className="font-medium">Creating your video...</span>
+          <span className="font-medium">יוצר את הסרטון שלך...</span>
         </div>
         <Button
           onClick={onCancel}
@@ -68,13 +68,13 @@ export default function ProductionProgress({
         </div>
         
         <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-          <span>{Math.round(progress)}% complete</span>
-          <span>{formatTime(timeElapsed)} elapsed</span>
+          <span>{Math.round(progress)}% הושלם</span>
+          <span>{formatTime(timeElapsed)} עבר</span>
         </div>
       </div>
       
       <p className={`text-sm mt-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-        This usually takes 1-3 minutes. You'll be notified when it's ready!
+        זה בדרך כלל לוקח 1-3 דקות. תקבל הודעה כשזה יהיה מוכן!
       </p>
     </div>
   );

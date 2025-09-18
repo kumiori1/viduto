@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, db } from './supabase'
 
 /**
  * Initiate video generation process
@@ -17,7 +17,7 @@ export const initiateVideoGeneration = async (chatId, prompt, imageUrl = null, u
         chat_id: chatId,
         prompt,
         image_url: imageUrl,
-        status: 'queued',
+        status: 'processing',
         processing_started_at: new Date().toISOString(),
         credits_used: 10, // Default credit cost
         idempotency_key: `${chatId}-${Date.now()}`
@@ -37,13 +37,18 @@ export const initiateVideoGeneration = async (chatId, prompt, imageUrl = null, u
       })
       .eq('id', chatId)
 
-    // Deduct credits from user
-    await supabase.rpc('deduct_user_credits', {
+    // Deduct credits from user (using RPC function)
+    const { error: creditsError } = await supabase.rpc('deduct_user_credits', {
       user_id: userId,
       credits_to_deduct: 10
     })
 
-    // Start video processing (simulate for now)
+    if (creditsError) {
+      console.error('Error deducting credits:', creditsError)
+      // Continue anyway - we'll handle this in the UI
+    }
+
+    // Start video processing simulation
     processVideo(video.id)
 
     return video
@@ -59,22 +64,13 @@ export const initiateVideoGeneration = async (chatId, prompt, imageUrl = null, u
  */
 const processVideo = async (videoId) => {
   try {
-    // Update status to processing
-    await supabase
-      .from('video')
-      .update({
-        status: 'processing',
-        processing_started_at: new Date().toISOString()
-      })
-      .eq('id', videoId)
-
-    // Simulate processing time (5-15 seconds)
-    const processingTime = Math.random() * 10000 + 5000
+    // Simulate processing time (10-30 seconds)
+    const processingTime = Math.random() * 20000 + 10000
     
     setTimeout(async () => {
       try {
-        // Simulate success/failure (90% success rate)
-        const isSuccess = Math.random() > 0.1
+        // Simulate success/failure (95% success rate)
+        const isSuccess = Math.random() > 0.05
 
         if (isSuccess) {
           // Update with completed status and mock video URL
@@ -92,7 +88,7 @@ const processVideo = async (videoId) => {
             .from('video')
             .update({
               status: 'failed',
-              error_message: 'Video processing failed. Please try again.',
+              error_message: 'שגיאה ביצירת הסרטון. אנא נסה שוב.',
               processing_completed_at: new Date().toISOString()
             })
             .eq('id', videoId)
@@ -129,7 +125,7 @@ const processVideo = async (videoId) => {
  * @param {string} userId - User ID
  * @param {string} reason - Cancellation reason
  */
-export const cancelVideoGeneration = async (videoId, userId, reason = 'User cancelled') => {
+export const cancelVideoGeneration = async (videoId, userId, reason = 'בוטל על ידי המשתמש') => {
   try {
     const { data: video, error } = await supabase
       .from('video')
@@ -156,12 +152,16 @@ export const cancelVideoGeneration = async (videoId, userId, reason = 'User canc
         .eq('id', video.chat_id)
     }
 
-    // Refund credits if processing hadn't started
-    if (video.status === 'queued') {
-      await supabase.rpc('add_user_credits', {
+    // Refund credits if processing hadn't really started
+    if (video.status === 'queued' || video.status === 'processing') {
+      const { error: refundError } = await supabase.rpc('add_user_credits', {
         user_id: userId,
         credits_to_add: video.credits_used || 10
       })
+
+      if (refundError) {
+        console.error('Error refunding credits:', refundError)
+      }
     }
 
     return video
