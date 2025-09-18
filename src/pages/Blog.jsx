@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/supabase";
@@ -37,40 +37,40 @@ export default function BlogPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-white">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
+            <Link to="/home" className="flex items-center gap-2">
               <Logo />
-            </div>
+              <span className="text-2xl font-light text-gray-900 tracking-tight hover:text-gray-700 transition-colors">
+                Viduto
+              </span>
+            </Link>
             
             <nav className="hidden md:flex space-x-8">
-              <Link to="/" className="text-gray-600 hover:text-gray-900">
+              <Link to="/home" className="text-gray-600 hover:text-gray-900">
                 Home
               </Link>
               <Link to="/blog" className="text-gray-900 font-medium">
                 Blog
               </Link>
-              <Link to="/about" className="text-gray-600 hover:text-gray-900">
-                About
+              <Link to="/features" className="text-gray-600 hover:text-gray-900">
+                Features
+              </Link>
+              <Link to="/pricing" className="text-gray-600 hover:text-gray-900">
+                Pricing
               </Link>
             </nav>
 
             <div className="hidden md:flex items-center space-x-4">
               {user ? (
-                <div className="flex items-center space-x-4">
-                  <span className="text-gray-700">Welcome, {user.name}</span>
-                  <Button
-                    onClick={() => {
-                      localStorage.removeItem('token');
-                      window.location.reload();
-                    }}
-                    variant="outline"
-                  >
-                    Logout
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => navigate('/dashboard')}
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  Dashboard
+                </Button>
               ) : (
                 <>
                   <Button
@@ -92,6 +92,9 @@ export default function BlogPage() {
               className="md:hidden"
               onClick={() => setIsMobileMenuOpen(true)}
             >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
           </div>
         </div>
@@ -109,7 +112,10 @@ export default function BlogPage() {
 
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+            <div className="text-center">
+              <Loader2 className="h-12 w-12 animate-spin text-orange-500 mx-auto mb-4" />
+              <p className="text-gray-600">Loading blog posts...</p>
+            </div>
           </div>
         ) : posts.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -126,20 +132,24 @@ export default function BlogPage() {
 
       <Footer />
       
-      {showAuthModal && (
-        <AuthModal onClose={() => setShowAuthModal(false)} />
-      )}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
       
-      {isMobileMenuOpen && (
-        <MobileMenu
-          onClose={() => setIsMobileMenuOpen(false)}
-          user={user}
-          onAuthClick={() => {
-            setIsMobileMenuOpen(false);
-            setShowAuthModal(true);
-          }}
-        />
-      )}
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        user={user}
+        onAuthClick={() => {
+          setIsMobileMenuOpen(false);
+          setShowAuthModal(true);
+        }}
+        onDashboardClick={() => {
+          setIsMobileMenuOpen(false);
+          navigate('/dashboard');
+        }}
+      />
     </div>
   );
 }
