@@ -8,8 +8,8 @@ import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import Dashboard from './pages/Dashboard';
 import Enterprise from './pages/enterprise';
-import Terms from './pages/Terms';
-import Privacy from './pages/Privacy';
+import Terms from './pages/terms';
+import Privacy from './pages/privacy';
 
 export default function App() {
   return (
