@@ -15,7 +15,8 @@ export default defineConfig({
   },
   optimizeDeps: {
     esbuildOptions: {
-      target: 'es2020'
+      target: 'es2020',
+      loader: { '.js': 'jsx' }
     }
   }
 })
