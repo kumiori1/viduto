@@ -3,30 +3,37 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { db } from "@/lib/supabase";
 import { Footer } from "../components/Footer";
 import { AuthModal } from "../components/AuthModal";
 import { MobileMenu } from "../components/MobileMenu";
 import Logo from "@/components/Logo";
 import PostCard from "../components/blog/PostCard";
-import { postsData } from "../components/blog/postsData";
+import { toast } from "sonner";
 
 export default function BlogPage() {
   const { user } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const run = async () => {
+    const loadBlogPosts = async () => {
+      setLoading(true);
       try {
-        // Use static posts data for now
-        setPosts(postsData.sort((a, b) => (new Date(a.published_at) < new Date(b.published_at) ? 1 : -1)));
-      } catch {
-        setPosts(postsData.sort((a, b) => (new Date(a.published_at) < new Date(b.published_at) ? 1 : -1)));
+        const blogPosts = await db.getBlogPosts();
+        setPosts(blogPosts || []);
+      } catch (error) {
+        console.error('Error loading blog posts:', error);
+        toast.error('Failed to load blog posts');
+        setPosts([]);
+      } finally {
+        setLoading(false);
       }
     };
-    run();
+    loadBlogPosts();
   }, []);
 
   return (
@@ -85,11 +92,21 @@ export default function BlogPage() {
               className="md:hidden"
               onClick={() => setIsMobileMenuOpen(true)}
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+            </div>
+          ) : posts.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {posts.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">No blog posts available at the moment.</p>
+            </div>
+          )}
         </div>
       </header>
 

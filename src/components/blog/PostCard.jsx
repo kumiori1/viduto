@@ -21,7 +21,7 @@ export default function PostCard({ post }) {
             {new Date(post.published_at).toLocaleDateString()}
           </span>
           <Link
-            to={`/blogpost?id=${post.id}`}
+            to={post.slug ? `/blogpost?slug=${post.slug}` : `/blogpost?id=${post.id}`}
             className="text-blue-600 hover:text-blue-800 font-medium"
           >
             Read More

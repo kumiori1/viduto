@@ -1,3 +1,6 @@
+// This file is deprecated - blog posts are now loaded from Supabase
+// Keeping for reference only
+
 export const postsData = [
   {
     id: 1,

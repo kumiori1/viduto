@@ -145,6 +145,39 @@ export const db = {
       .single()
     if (error) throw error
     return data
+  },
+
+  // Blog Posts
+  getBlogPosts: async () => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+    if (error) throw error
+    return data
+  },
+
+  getBlogPostById: async (id) => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('id', id)
+      .eq('status', 'published')
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  getBlogPostBySlug: async (slug) => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .single()
+    if (error) throw error
+    return data
   }
 }
 
