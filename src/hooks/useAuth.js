@@ -107,3 +107,4 @@ export const AuthProvider = ({ children }) => {
     signIn,
     signOut
   };
+}
