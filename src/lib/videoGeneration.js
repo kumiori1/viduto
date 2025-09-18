@@ -88,7 +88,7 @@ const processVideo = async (videoId) => {
             .from('video')
             .update({
               status: 'failed',
-              error_message: 'שגיאה ביצירת הסרטון. אנא נסה שוב.',
+              error_message: 'Error creating video. Please try again.',
               processing_completed_at: new Date().toISOString()
             })
             .eq('id', videoId)
@@ -125,7 +125,7 @@ const processVideo = async (videoId) => {
  * @param {string} userId - User ID
  * @param {string} reason - Cancellation reason
  */
-export const cancelVideoGeneration = async (videoId, userId, reason = 'בוטל על ידי המשתמש') => {
+export const cancelVideoGeneration = async (videoId, userId, reason = 'Cancelled by user') => {
   try {
     const { data: video, error } = await supabase
       .from('video')

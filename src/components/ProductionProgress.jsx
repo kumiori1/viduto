@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function ProductionProgress({ 
+export function ProductionProgress({ 
   videoId, 
   startedAt, 
   chatId, 
@@ -42,7 +42,7 @@ export default function ProductionProgress({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
-          <span className="font-medium">יוצר את הסרטון שלך...</span>
+          <span className="font-medium">Creating your video...</span>
         </div>
         <Button
           onClick={onCancel}
@@ -68,13 +68,13 @@ export default function ProductionProgress({
         </div>
         
         <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-          <span>{Math.round(progress)}% הושלם</span>
-          <span>{formatTime(timeElapsed)} עבר</span>
+          <span>{Math.round(progress)}% complete</span>
+          <span>{formatTime(timeElapsed)} elapsed</span>
         </div>
       </div>
       
       <p className={`text-sm mt-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-        זה בדרך כלל לוקח 1-3 דקות. תקבל הודעה כשזה יהיה מוכן!
+        This usually takes 1-3 minutes. You'll get notified when it's ready!
       </p>
     </div>
   );

@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { supabase, db, uploadFile } from '@/lib/supabase';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { VideoPlayer } from './VideoPlayer';
-import ProductionProgress from './ProductionProgress';
+import { ProductionProgress } from './ProductionProgress';
 import { initiateVideoGeneration, cancelVideoGeneration } from '@/lib/videoGeneration';
 import { toast } from "sonner";
 
-export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewChat, darkMode = false }) {
+export function ChatInterface({ chatId, onChatUpdate, onCreditsUpdate, onNewChat, darkMode = false }) {
     const { user } = useAuth();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -221,18 +221,18 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
                 });
 
                 // Refresh credits
-                if (onCreditsRefreshed) {
-                    onCreditsRefreshed();
+                if (onCreditsUpdate) {
+                    onCreditsUpdate();
                 }
 
             } catch (error) {
                 console.error('Error starting video generation:', error);
-                toast.error('שגיאה בהתחלת יצירת הסרטון');
+                toast.error('Error starting video generation');
             }
 
         } catch (error) {
             console.error('Error sending message:', error);
-            toast.error('שגיאה בשליחת ההודעה. נסה שוב.');
+            toast.error('Error sending message. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -245,10 +245,10 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
         try {
             await cancelVideoGeneration(productionStatus.videoId, user.id, 'בוטל על ידי המשתמש');
             setProductionStatus(null);
-            toast.success('יצירת הסרטון בוטלה');
+            toast.success('Video generation cancelled');
         } catch (error) {
             console.error('Error cancelling production:', error);
-            toast.error('שגיאה בביטול יצירת הסרטון');
+            toast.error('Error cancelling video generation');
         } finally {
             setIsCancelling(false);
         }
@@ -273,16 +273,16 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
                         <Play className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-300'}`} />
                     </div>
                     <h2 className={`text-2xl font-light mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        מוכן ליצור את הסרטון הראשון שלך?
+                        Ready to create your first video?
                     </h2>
                     <p className={`font-light mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        התחל פרויקט חדש כדי להתחיל ליצור סרטונים מקצועיים עם AI.
+                        Start a new project to begin creating professional videos with AI.
                     </p>
                     <Button
                         onClick={onNewChat}
                         className="bg-orange-500 text-white px-6 py-3 rounded-full font-normal hover:bg-orange-500/90 transform hover:scale-105 transition-all duration-200 shadow-lg"
                     >
-                        התחל פרויקט חדש
+                        Start New Project
                     </Button>
                 </div>
             </div>
@@ -361,7 +361,7 @@ export function ChatInterface({ chatId, onChatUpdate, onCreditsRefreshed, onNewC
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onInput={adjustTextareaHeight}
-                                placeholder="תאר את הסרטון שלך או בקש שינויים..."
+                                placeholder="Describe your video or request changes..."
                                 className={`w-full resize-none border-none outline-none font-light ${
                                     darkMode ? 'bg-transparent text-white placeholder-gray-400' : 'bg-transparent text-gray-900 placeholder-gray-500'
                                 }`}

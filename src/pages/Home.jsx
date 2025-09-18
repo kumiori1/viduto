@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Clock, Building, Check, X, Camera, Wand2, Edit, Upload, Play } from 'lucide-react';
+import { Menu, X, Upload, Play, Edit } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { db, uploadFile } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { AuthModal } from '../components/AuthModal';
 import { MobileMenu } from '../components/MobileMenu';
-import Logo from '../components/Logo';
+import { Logo } from '../components/Logo';
 import { HeroSection } from '../components/HeroSection';
 import { FeaturesSection } from '../components/FeaturesSection';
 import { TestimonialsSection } from '../components/TestimonialsSection';
 import { FaqsSection } from '../components/FaqsSection';
 import { CtaSection } from '../components/CtaSection';
 import { Footer } from '../components/Footer';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 // Helper function to convert file to base64
 const fileToBase64 = (file) => {
@@ -158,7 +158,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white" style={{ '--header-bg': 'rgba(255, 255, 255, 0.7)', '--text-dark': '#333', '--text-medium': '#666', '--text-light': '#999', '--accent-orange': '#F97316', '--accent-primary': '#60A5FA', '--accent-secondary': '#818CF8', '--surface-elevated': '#F3F4F6', '--input-border': '#E5E7EB', '--accent-success': '#10B981' }}>
       
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-md border-b border-gray-100">
@@ -166,7 +166,7 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/home" className="flex items-center gap-2">
-              <Logo size={32} className="w-8 h-8" />
+              <Logo size={32} />
               <span className="text-2xl font-light text-gray-900 tracking-tight hover:text-gray-700 transition-colors">
                 Viduto
               </span>
@@ -231,6 +231,10 @@ export default function Home() {
         onAuthClick={() => {
           setIsMobileMenuOpen(false);
           setShowAuthModal(true);
+        }}
+        onDashboardClick={() => {
+          setIsMobileMenuOpen(false);
+          navigate('/dashboard');
         }}
       />
 
@@ -400,7 +404,9 @@ export default function Home() {
                     <ul className="space-y-3">
                       {["20 free credits", "HD quality output", "Commercial usage rights", "Email support"].map((item) => (
                         <li key={item} className="flex items-center gap-3">
-                          <Check size={16} className="text-green-500 flex-shrink-0" />
+                          <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                          </div>
                           <span className="text-gray-600 font-light">{item}</span>
                         </li>
                       ))}

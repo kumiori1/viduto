@@ -6,7 +6,7 @@ import { db, uploadFile } from '@/lib/supabase';
 import { ChatInterface } from '../components/ChatInterface';
 import { Button } from '@/components/ui/button';
 import { toast } from "sonner";
-import Logo from "@/components/Logo";
+import { Logo } from "@/components/Logo";
 
 export default function Dashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -144,7 +144,10 @@ export default function Dashboard() {
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-          <Logo />
+          <div className="flex items-center gap-2">
+            <Logo size={32} />
+            <span className="text-xl font-bold text-gray-900 dark:text-white">Viduto</span>
+          </div>
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -241,7 +244,7 @@ export default function Dashboard() {
           <ChatInterface
             chatId={currentChatId}
             onChatUpdate={handleChatUpdate}
-            onCreditsRefreshed={refreshUserCredits}
+            onCreditsUpdate={refreshUserCredits}
             onNewChat={createNewChat}
             darkMode={darkMode}
           />

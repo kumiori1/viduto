@@ -77,15 +77,15 @@ export function PricingContent({ isSubscriptionView = false, darkMode = false })
     
     try {
       // כאן תוסיף את האינטגרציה עם Stripe
-      toast.success(`מתחיל תהליך רכישה עבור ${planName}! (מצב דמו)`);
+      toast.success(`Starting purchase process for ${planName}! (Demo mode)`);
       // Simulate success
       setTimeout(() => {
-        toast.success('התשלום הושלם בהצלחה!');
+        toast.success('Payment completed successfully!');
         navigate('/dashboard');
       }, 2000);
     } catch (error) {
       console.error('Error creating checkout session:', error);
-      toast.error('שגיאה בתהליך התשלום');
+      toast.error('Payment process error');
     } finally {
       setLoading(null);
     }
@@ -101,13 +101,13 @@ export function PricingContent({ isSubscriptionView = false, darkMode = false })
     
     try {
       // כאן תוסיף את האינטגרציה עם Stripe לרכישת קרדיטים
-      toast.success(`מתחיל תהליך רכישה של ${creditAmount} קרדיטים! (מצב דמו)`);
+      toast.success(`Starting purchase of ${creditAmount} credits! (Demo mode)`);
       setTimeout(() => {
-        toast.success('הקרדיטים נוספו לחשבון שלך!');
+        toast.success('Credits added to your account!');
       }, 2000);
     } catch (error) {
       console.error('Error buying credits:', error);
-      toast.error('שגיאה ברכישת קרדיטים');
+      toast.error('Error purchasing credits');
     } finally {
       setLoading(null);
     }
@@ -181,7 +181,7 @@ export function PricingContent({ isSubscriptionView = false, darkMode = false })
                 {loading === tier.priceId ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    טוען...
+                    Loading...
                   </div>
                 ) : (
                   tier.cta
@@ -195,10 +195,10 @@ export function PricingContent({ isSubscriptionView = false, darkMode = false })
         <div className={`border-t pt-16 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <div className="text-center mb-12">
             <h2 className={`text-3xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              או קנה קרדיטים בנפרד
+              Or buy credits separately
             </h2>
             <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              גמישות מלאה - שלם רק על מה שאתה משתמש
+              Full flexibility - pay only for what you use
             </p>
           </div>
 
@@ -206,10 +206,10 @@ export function PricingContent({ isSubscriptionView = false, darkMode = false })
             <div className={`rounded-2xl p-8 shadow-lg ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
               <div className="text-center mb-6">
                 <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  חבילת קרדיטים
+                  Credit Pack
                 </h3>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  בחר כמה קרדיטים אתה רוצה
+                  Choose how many credits you want
                 </p>
               </div>
 
@@ -227,7 +227,7 @@ export function PricingContent({ isSubscriptionView = false, darkMode = false })
                       {creditAmount}
                     </div>
                     <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      קרדיטים
+                      credits
                     </div>
                   </div>
                   
@@ -244,7 +244,7 @@ export function PricingContent({ isSubscriptionView = false, darkMode = false })
                     ${(creditAmount * 0.1).toFixed(2)}
                   </span>
                   <span className={`text-sm ml-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    ($0.10 לקרדיט)
+                    ($0.10 per credit)
                   </span>
                 </div>
               </div>
@@ -257,10 +257,10 @@ export function PricingContent({ isSubscriptionView = false, darkMode = false })
                 {loading === 'credits' ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    טוען...
+                    Loading...
                   </div>
                 ) : (
-                  'קנה קרדיטים'
+                  'Buy Credits'
                 )}
               </Button>
             </div>
